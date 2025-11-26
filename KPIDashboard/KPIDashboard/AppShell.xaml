@@ -6,9 +6,14 @@
     xmlns:local="clr-namespace:KPIDashboard"
     Shell.FlyoutBehavior="Disabled"
     xmlns:pages="clr-namespace:KPIDashboard.DashboardPages">
-    
-    <ShellContent x:Name="DesktopContent"
+
+
+    <TabBar>
+
+        <ShellContent x:Name="DesktopContent"
              ContentTemplate="{DataTemplate pages:MainPageDesktop}" />
     <ShellContent x:Name="MobileContent"
              ContentTemplate="{DataTemplate pages:MainPageMobile}" />
+
+    </TabBar>
 </Shell>
