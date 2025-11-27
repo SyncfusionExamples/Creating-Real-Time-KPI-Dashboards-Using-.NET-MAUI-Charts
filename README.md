@@ -39,7 +39,7 @@ Two-column, four-row Grid layout:
 - Purpose: Provide quick-glance signals for momentum and top performers.
 - Highlights: Momentum status, Top Region by revenue share, Top Channel by units.
 
-https://github.com/user-attachments/assets/56f3cb3e-2d44-4541-9568-c39ac4e8fc20
+![KPIInsightDashboardWidowsDemo](https://github.com/user-attachments/assets/56f3cb3e-2d44-4541-9568-c39ac4e8fc20)
 
 ## Troubleshooting
 
