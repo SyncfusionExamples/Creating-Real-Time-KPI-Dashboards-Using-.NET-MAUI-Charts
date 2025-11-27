@@ -1,0 +1,212 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="KPIDashboard.DashboardPages.MainPageMobile"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:Chart="clr-namespace:Syncfusion.Maui.Toolkit.Charts;assembly=Syncfusion.Maui.Toolkit"
+    xmlns:local="clr-namespace:KPIDashboard"
+    Padding="8"
+    BackgroundColor="#0B1220">
+
+    <ContentPage.BindingContext>
+        <local:DashboardViewModel />
+    </ContentPage.BindingContext>
+
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <Color x:Key="TextLight">#E5E7EB</Color>
+            <SolidColorBrush x:Key="CardBg" Color="#111827" />
+            <SolidColorBrush x:Key="CardStroke" Color="#1F2937" />
+
+            <Style TargetType="Label">
+                <Setter Property="TextColor" Value="{StaticResource TextLight}" />
+            </Style>
+
+            <Style x:Key="CardTitle" TargetType="Label">
+                <Setter Property="FontAttributes" Value="Bold"/>
+                <Setter Property="FontSize" Value="15"/>
+                <Setter Property="TextColor" Value="{StaticResource TextLight}"/>
+            </Style>
+
+            <Style x:Key="Card" TargetType="Border">
+                <Setter Property="Background" Value="{StaticResource CardBg}"/>
+                <Setter Property="Stroke" Value="{StaticResource CardStroke}"/>
+                <Setter Property="StrokeThickness" Value="1"/>
+                <Setter Property="Padding" Value="10"/>
+            </Style>
+
+            <Style x:Key="InsightCard" TargetType="Border" BasedOn="{StaticResource Card}">
+                <Setter Property="Padding" Value="8"/>
+            </Style>
+
+        </ResourceDictionary>
+    </ContentPage.Resources>
+
+    <ScrollView>
+        <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto" ColumnDefinitions="*" RowSpacing="10">
+            <!-- Header -->
+            <Border Grid.Row="0" Style="{StaticResource Card}">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="12"/>
+                </Border.StrokeShape>
+                <Grid Padding="6">
+                    <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
+                        <Path Fill="White" WidthRequest="35" HeightRequest="35"
+                         Data="M20,16L24,16 24,24 20,24z M8,13L12,13 12,24 8,24z M14,9L18,9 18,24 14,24z M24.350006,2.3779907C27.505005,4.3179932,29.936005,7.3150024,31.144989,10.880005L28.920013,11.688995C27.925995,8.7170105,25.936005,6.2019958,23.343994,4.5360107z M16,0C17.798004,0,19.519989,0.31201172,21.134003,0.85998535L20.130005,3.0140076C18.826996,2.598999 17.440002,2.3699951 16,2.3699951 8.4840088,2.3699951 2.3699951,8.4840088 2.3699951,16 2.3699951,23.515991 8.4840088,29.630005 16,29.630005 23.515991,29.630005 29.630005,23.515991 29.630005,16 29.630005,15.73999 29.604004,15.484985 29.591003,15.229004L31.917999,14.381989C31.971985,14.914001 32,15.45401 32,16 32,24.822998 24.821991,32 16,32 7.178009,32 0,24.822998 0,16 0,7.178009 7.178009,0 16,0z" />
+                        <!-- Title text -->
+                        <Label Text="Sales Performance Analysis" Padding="0,0,0,0" FontSize="{OnPlatform Android=24, iOS=20}" FontAttributes="Bold" />
+                    </HorizontalStackLayout>
+                </Grid>
+            </Border>
+
+            <!-- Insights -->
+            <VerticalStackLayout Grid.Row="1" Spacing="10">
+                <!-- Momentum -->
+                <Border Style="{StaticResource InsightCard}" HeightRequest="84">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="12"/>
+                    </Border.StrokeShape>
+                    <Grid ColumnDefinitions="Auto,*" Padding="10" ColumnSpacing="14" VerticalOptions="Center">
+                        <Border BackgroundColor="#3B82F6" WidthRequest="56" HeightRequest="44" VerticalOptions="Center" HorizontalOptions="Center">
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="10"/>
+                            </Border.StrokeShape>
+                            <Path Margin="7,8,0,0" Fill="Black" WidthRequest="40" HeightRequest="40" Data="M17.276001,18.666992L23.999023,25.333984 26.666016,25.333984 26.666016,26.666992 22.666016,26.666992 17.333008,21.139038 11.999023,26.666992 5.3319702,26.666992 5.3319702,25.333984 10.859985,25.222046z M16.000977,6.6669922L25.333984,18.666992 26.666992,18.666992 26.666992,20 24,20 16,9.3330078 10.666992,20 5.3339844,20 5.3339844,18.666992 9.3339844,18.666992z M2.6660156,2.6660156L2.6660156,29.333008 29.333008,29.333008 29.333008,2.6660156z M0,0L32,0 32,32 0,32z"/>
+                        </Border>
+                        <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
+                            <Label Text="{Binding Insights[0].Value}" FontAttributes="Bold" FontSize="20" TextColor="#FFFFFF"/>
+                            <Label Text="{Binding Insights[0].Name}"  FontSize="12" TextColor="#A5B4FC"/>
+                        </VerticalStackLayout>
+                    </Grid>
+                </Border>
+                <!-- Top Region -->
+                <Border Style="{StaticResource InsightCard}" HeightRequest="84">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="12"/>
+                    </Border.StrokeShape>
+                    <Grid ColumnDefinitions="Auto,*" Padding="10" ColumnSpacing="14" VerticalOptions="Center">
+                        <Border BackgroundColor="#3B82F6" WidthRequest="56" HeightRequest="44" VerticalOptions="Center" HorizontalOptions="Center">
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="10"/>
+                            </Border.StrokeShape>
+                            <Path Margin="7,8,0,0" Fill="Black" WidthRequest="40" HeightRequest="40" Data="M23.542969,22.45802C22.734985,25.87001 21.407959,28.077012 20.090942,29.487016 23.763977,28.375016 26.799988,25.806014 28.536987,22.45802z M10.493958,22.45802C12.218994,27.951005 15.189941,29.660022 16.054993,30.047015 16.948975,29.756 20.10199,28.311998 21.610962,22.45802z M3.4629517,22.45802C5.2749634,25.951003 8.506958,28.585008 12.393982,29.612018 11.026978,28.191026 9.5439453,25.941024 8.5379639,22.45802z M24.159973,12.441993C24.270996,13.596016 24.336975,14.824014 24.302979,16.19999 24.263,17.827007 24.119995,19.268993 23.911987,20.579999L29.339966,20.579999C29.835999,19.143993 30.117981,17.611003 30.117981,16.009011 30.117981,14.775003 29.941956,13.583992 29.640991,12.441993z M9.4679565,12.441993C9.2939453,13.785012 9.2469482,15.264016 9.407959,16.921001 9.539978,18.275005 9.7419434,19.483012 9.9879761,20.579999L22.006958,20.579999C22.225952,19.280009 22.379944,17.827007 22.420959,16.152993 22.454956,14.790017 22.403992,13.560005 22.289001,12.441993z M2.3589478,12.441993C2.05896,13.583992 1.8829956,14.775003 1.8829956,16.009011 1.8829956,17.611003 2.164978,19.143993 2.6599731,20.579999L8.0739746,20.579999C7.848999,19.513011 7.6569824,18.375011 7.532959,17.104015 7.3669434,15.397989 7.4069824,13.855995 7.5769653,12.441993z M20.221985,2.5690017C21.727966,4.1199972,23.221985,6.617008,23.91095,10.564001L29.017944,10.564001C27.416992,6.7680094,24.195984,3.8139975,20.221985,2.5690017z M12.529968,2.3720102C8.2149658,3.4669819,4.6819458,6.5329931,2.9819946,10.564001L7.901001,10.564001C8.7919922,6.6609838,10.78595,4.0180075,12.529968,2.3720102z M16.095947,1.9920053C14.978943,2.6090102,11.182983,5.0700099,9.80896,10.564001L22.013977,10.564001C20.78595,4.1120016,17.180969,2.372987,16.095947,1.9920053z M15.891968,0L16.129944,0.053009032C24.891968,0.12298569 32,7.2519877 32,16.009011 32,24.770004 24.886963,31.900012 16.121948,31.966998L15.828979,31.964008C7.0869751,31.871021 0,24.753005 0,16.009011 0,7.2869913 7.0529785,0.18499745 15.765991,0.057983398z"/>
+                        </Border>
+                        <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
+                            <Label Text="{Binding Insights[1].Value}" FontAttributes="Bold" FontSize="20" TextColor="#FFFFFF"/>
+                            <Label Text="{Binding Insights[1].Name}"  FontSize="12" TextColor="#A5B4FC"/>
+                        </VerticalStackLayout>
+                    </Grid>
+                </Border>
+                <!-- Top Channel -->
+                <Border Style="{StaticResource InsightCard}" HeightRequest="84">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="12"/>
+                    </Border.StrokeShape>
+                    <Grid ColumnDefinitions="Auto,*" Padding="10" ColumnSpacing="14" VerticalOptions="Center">
+                        <Border BackgroundColor="#3B82F6" WidthRequest="56" HeightRequest="44" VerticalOptions="Center" HorizontalOptions="Center">
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="10"/>
+                            </Border.StrokeShape>
+                            <Path Margin="7,10,0,0" Fill="Black" WidthRequest="40" HeightRequest="40" Data="M0,22.299992L32,22.299992 32,26.700001 0,26.700001z M10.800018,11.9L14.900024,11.9 14.900024,19.999996 10.800018,19.999996z M16.900024,8.699995L21,8.699995 21,19.999996 16.900024,19.999996z M4.8000183,7.4999986L8.9000244,7.4999986 8.9000244,19.999996 4.8000183,19.999996z M22.700012,0L26.800018,0 26.800018,19.999996 22.700012,19.999996z"/>
+                        </Border>
+                        <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
+                            <Label Text="{Binding Insights[2].Value}" FontAttributes="Bold" FontSize="20" TextColor="#FFFFFF"/>
+                            <Label Text="{Binding Insights[2].Name}"  FontSize="12" TextColor="#A5B4FC"/>
+                        </VerticalStackLayout>
+                    </Grid>
+                </Border>
+            </VerticalStackLayout>
+
+            <!-- Revenue Trend -->
+            <Border Grid.Row="2" Style="{StaticResource Card}">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="12"/>
+                </Border.StrokeShape>
+                <VerticalStackLayout Spacing="6">
+                    <Label Text="Revenue Trend" Style="{StaticResource CardTitle}" />
+                    <Chart:SfCartesianChart HeightRequest="200">
+                        <Chart:SfCartesianChart.XAxes>
+                            <Chart:DateTimeAxis IntervalType="Days" Interval="5" ShowMajorGridLines="False">
+                                <Chart:DateTimeAxis.LabelStyle>
+                                    <Chart:ChartAxisLabelStyle TextColor="LightGray"/>
+                                </Chart:DateTimeAxis.LabelStyle>
+                            </Chart:DateTimeAxis>
+                        </Chart:SfCartesianChart.XAxes>
+                        <Chart:SfCartesianChart.YAxes>
+                            <Chart:NumericalAxis>
+                                <Chart:NumericalAxis.LabelStyle>
+                                    <Chart:ChartAxisLabelStyle TextColor="LightGray"/>
+                                </Chart:NumericalAxis.LabelStyle>
+                            </Chart:NumericalAxis>
+                        </Chart:SfCartesianChart.YAxes>
+                        <Chart:LineSeries ItemsSource="{Binding RevenueTrend}"
+                                        XBindingPath="Time"
+                                        YBindingPath="Value"
+                                        Fill="#0EA5E9" StrokeWidth="2"
+                                        ShowMarkers="False" EnableTooltip="True"/>
+                    </Chart:SfCartesianChart>
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- Revenue by Region -->
+            <Border Grid.Row="3" Style="{StaticResource Card}">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="12"/>
+                </Border.StrokeShape>
+                <VerticalStackLayout Spacing="6">
+                    <Label Text="Revenue by Region" Style="{StaticResource CardTitle}"/>
+                    <Chart:SfCircularChart HeightRequest="260">
+                        <Chart:DoughnutSeries ItemsSource="{Binding RevenueByRegion}"
+                                            XBindingPath="Category"
+                                            YBindingPath="Value"
+                                            ShowDataLabels="True"
+                                            EnableTooltip="True"
+                                            PaletteBrushes="{Binding CustomBrushes}"/>
+                        <Chart:SfCircularChart.Legend>
+                            <Chart:ChartLegend>
+                                <Chart:ChartLegend.LabelStyle>
+                                    <Chart:ChartLegendLabelStyle TextColor="#E5E7EB"
+                                                       Margin="5"
+                                                       FontFamily="PlaywriteAR-Regular"/>
+                                </Chart:ChartLegend.LabelStyle>
+                            </Chart:ChartLegend>
+                        </Chart:SfCircularChart.Legend>
+                    </Chart:SfCircularChart>
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- Units by Channel -->
+            <Border Grid.Row="4" Style="{StaticResource Card}">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="12"/>
+                </Border.StrokeShape>
+                <VerticalStackLayout Spacing="6">
+                    <Label Text="Units by Channel" Style="{StaticResource CardTitle}" />
+                    <Chart:SfCartesianChart HeightRequest="220">
+                        <Chart:SfCartesianChart.XAxes>
+                            <Chart:CategoryAxis ShowMajorGridLines="False">
+                                <Chart:CategoryAxis.LabelStyle>
+                                    <Chart:ChartAxisLabelStyle TextColor="LightGray"/>
+                                </Chart:CategoryAxis.LabelStyle>
+                            </Chart:CategoryAxis>
+                        </Chart:SfCartesianChart.XAxes>
+                        <Chart:SfCartesianChart.YAxes>
+                            <Chart:NumericalAxis Minimum="0">
+                                <Chart:NumericalAxis.LabelStyle>
+                                    <Chart:ChartAxisLabelStyle TextColor="LightGrey"/>
+                                </Chart:NumericalAxis.LabelStyle>
+                            </Chart:NumericalAxis>
+                        </Chart:SfCartesianChart.YAxes>
+                        <Chart:ColumnSeries ItemsSource="{Binding LeadsByChannel}"
+                                          XBindingPath="Category"
+                                          YBindingPath="Value"
+                                          CornerRadius="6"
+                                          ShowDataLabels="True"
+                                          EnableTooltip="True"
+                                          PaletteBrushes="{Binding LeadsBrushes}"/>
+                    </Chart:SfCartesianChart>
+                </VerticalStackLayout>
+            </Border>
+        </Grid>
+    </ScrollView>
+</ContentPage>
