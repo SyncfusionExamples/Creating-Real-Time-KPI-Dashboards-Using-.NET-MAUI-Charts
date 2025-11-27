@@ -1,10 +1,10 @@
-# Creating Real-Time KPI Dashboards Using .NET MAUI Charts
+# Creating Real-Time KPI Dashboards Using .NET MAUI Toolkit Charts
 
 ## Overview
-The Real-Time KPI Dashboard showcases a cross-platform (.NET MAUI) analytics experience that streams sales and marketing metrics and turns them into actionable insights using Syncfusion® .NET MAUI Cartesian and Circular Charts. It focuses on clarity, responsiveness, and continuous updates for decision-making.
+The Real-Time KPI Dashboard showcases a cross-platform (.NET MAUI) analytics experience that streams sales and marketing metrics and turns them into actionable insights using Syncfusion® .NET MAUI Toolkit Charts. It focuses on clarity, responsiveness, and continuous updates for decision-making.
 
-## Syncfusion .NET MAUI Charts
-A high-performance [charting library](https://help.syncfusion.com/maui/cartesian-charts/getting-started) for .NET MAUI apps with:
+## Syncfusion .NET MAUI Toolkit Charts
+A high-performance [charting library](https://help.syncfusion.com/maui-toolkit/cartesian-charts/getting-started) for .NET MAUI apps with:
 - Broad chart coverage: Line, column/bar, doughnut/pie, stacked variants, and more.
 - Interactivity: Zooming, panning, tooltips, trackball, selection, and data labels.
 - Performance: Optimized rendering with smooth real-time animations.
@@ -46,7 +46,7 @@ Two column, four row Grid layout:
 **Path Too Long Exception**  
 If you are facing a path too long exception when building this example project, close Visual Studio and rename the repository to a shorter name before building the project.Path too long exception when building this example project, close Visual Studio and rename the repository to a shorter name before building the project.
 
-Refer to the blog for step-by-step guidance on From Metrics to Insights: Creating Real-Time KPI Dashboards Using .NET MAUI Charts
+Refer to the blog for step-by-step guidance on Creating Real-Time KPI Dashboards Using .NET MAUI Toolkit Charts
 
 
 
