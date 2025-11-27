@@ -16,32 +16,32 @@
             <Color x:Key="TextLight">#E5E7EB</Color>
             <SolidColorBrush x:Key="CardBg" Color="#111827" />
             <SolidColorBrush x:Key="CardStroke" Color="#1F2937" />
-            
+
             <Style TargetType="Label">
                 <Setter Property="TextColor" Value="{StaticResource TextLight}" />
             </Style>
-            
+
             <Style x:Key="CardTitle" TargetType="Label">
                 <Setter Property="FontAttributes" Value="Bold"/>
                 <Setter Property="FontSize" Value="16"/>
                 <Setter Property="TextColor" Value="{StaticResource TextLight}"/>
             </Style>
-            
+
             <Style x:Key="Card" TargetType="Border">
                 <Setter Property="Background" Value="{StaticResource CardBg}"/>
                 <Setter Property="Stroke" Value="{StaticResource CardStroke}"/>
                 <Setter Property="StrokeThickness" Value="1"/>
                 <Setter Property="Padding" Value="12"/>
             </Style>
-            
+
             <Style x:Key="InsightCard" TargetType="Border" BasedOn="{StaticResource Card}">
                 <Setter Property="Padding" Value="10"/>
             </Style>
-            
+
         </ResourceDictionary>
     </ContentPage.Resources>
 
-    <Grid RowDefinitions="Auto,Auto,Auto,Auto" 
+    <Grid RowDefinitions="Auto,Auto,*,*" 
           ColumnDefinitions="3*,2*" 
           RowSpacing="12" ColumnSpacing="12" Padding="12">
 
@@ -153,14 +153,14 @@
         </Grid>
 
         <!-- Revenue Trend (real-time) -->
-        <Border Grid.Row="2" Grid.Column="0" HeightRequest="280" Style="{StaticResource Card}">
+        <Border Grid.Row="2" Grid.Column="0"  Style="{StaticResource Card}">
             <Border.StrokeShape>
                 <RoundRectangle CornerRadius="12"/>
             </Border.StrokeShape>
 
-            <VerticalStackLayout Spacing="8">
-                <Label Text="Revenue Trend (real-time)" Style="{StaticResource CardTitle}" />
-                <Chart:SfCartesianChart x:Name="chart" HeightRequest="220">
+            <Grid RowSpacing="20" RowDefinitions="Auto,*">
+                <Label Text="Revenue Trend (real-time)" Style="{StaticResource CardTitle}" Grid.Row="0"/>
+                <Chart:SfCartesianChart x:Name="chart" Grid.Row="1">
                     <Chart:SfCartesianChart.XAxes>
                         <Chart:DateTimeAxis  IntervalType="Days" Interval="5" ShowMajorGridLines="False">
                             <Chart:DateTimeAxis.LabelStyle>
@@ -184,18 +184,18 @@
                         ShowMarkers="False"
                         EnableTooltip="True" />
                 </Chart:SfCartesianChart>
-            </VerticalStackLayout>
+            </Grid>
         </Border>
 
         <!-- Leads by Channel -->
-        <Border Grid.Row="3" Grid.Column="0" HeightRequest="280" Style="{StaticResource Card}">
+        <Border Grid.Row="3" Grid.Column="0"  Style="{StaticResource Card}">
             <Border.StrokeShape>
                 <RoundRectangle CornerRadius="12"/>
             </Border.StrokeShape>
 
-            <VerticalStackLayout Spacing="8">
-                <Label Text="Units by Channel" Style="{StaticResource CardTitle}" />
-                <Chart:SfCartesianChart HeightRequest="220">
+            <Grid RowSpacing="20" RowDefinitions="Auto,*">
+                <Label Text="Units by Channel" Style="{StaticResource CardTitle}" Grid.Row="0"/>
+                <Chart:SfCartesianChart HorizontalOptions="Fill" VerticalOptions="Fill" Grid.Row="1">
                     <Chart:SfCartesianChart.XAxes>
                         <Chart:CategoryAxis ShowMajorGridLines="False">
                             <Chart:CategoryAxis.LabelStyle>
@@ -219,9 +219,9 @@
                         EnableTooltip="True" PaletteBrushes="{Binding LeadsBrushes}" >
 
                     </Chart:ColumnSeries>
-                  
+
                 </Chart:SfCartesianChart>
-            </VerticalStackLayout>
+            </Grid>
         </Border>
 
         <!-- Revenue Share by Region -->
