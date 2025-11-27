@@ -162,7 +162,13 @@
                                             ShowDataLabels="True"
                                             EnableTooltip="True"/>
                         <Chart:SfCircularChart.Legend>
-                            <Chart:ChartLegend/>
+                            <Chart:ChartLegend>
+                                <Chart:ChartLegend.LabelStyle>
+                                    <Chart:ChartLegendLabelStyle TextColor="#E5E7EB"
+                                                       Margin="5"
+                                                       FontFamily="PlaywriteAR-Regular"/>
+                                </Chart:ChartLegend.LabelStyle>
+                            </Chart:ChartLegend>
                         </Chart:SfCircularChart.Legend>
                     </Chart:SfCircularChart>
                 </VerticalStackLayout>

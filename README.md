@@ -14,7 +14,7 @@ A high-performance [charting library](https://help.syncfusion.com/maui/cartesian
 
 ### Layout overview
 Two-column, four-row Grid layout:
-- Title bar: "Real-Time KPI Dashboard"
+- Title bar: "Real-Time KPI Dashboard for Sales performance analysis"
 - Insight strip: Momentum, Top Region, Top Channel
 - Content area:
   - Revenue Trend (Line)
