@@ -1,7 +1,7 @@
 # From Metrics to Insights: Creating Real-Time KPI Dashboards Using .NET MAUI Charts
 
 ## Overview
-The Real-Time KPI Dashboard showcases a cross-platform (.NET MAUI) analytics experience that streams sales-and-marketing metrics and turns them into actionable insights using Syncfusion® .NET MAUI Cartesian and Circular Charts. It focuses on clarity, responsiveness, and continuous updates for decision-making.
+The Real-Time KPI Dashboard showcases a cross-platform (.NET MAUI) analytics experience that streams sales and marketing metrics and turns them into actionable insights using Syncfusion® .NET MAUI Cartesian and Circular Charts. It focuses on clarity, responsiveness, and continuous updates for decision-making.
 
 ## Syncfusion .NET MAUI Charts
 A high-performance [charting library](https://help.syncfusion.com/maui/cartesian-charts/getting-started) for .NET MAUI apps with:
@@ -13,8 +13,8 @@ A high-performance [charting library](https://help.syncfusion.com/maui/cartesian
 ## Real-Time KPI Dashboard
 
 ### Layout overview
-Two-column, four-row Grid layout:
-- Title bar: "Real-Time KPI Dashboard for Sales performance analysis"
+Two column, four row Grid layout:
+- Title bar: "Real Time KPI Dashboard for Sales performance analysis"
 - Insight strip: Momentum, Top Region, Top Channel
 - Content area:
   - Revenue Trend (Line)
