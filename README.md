@@ -44,10 +44,9 @@ Two column, four row Grid layout:
 ## Troubleshooting
 
 **Path Too Long Exception**  
-If you are facing a path too long exception when building this example project, close Visual Studio and rename the repository to a shorter name before building the project.Path too long exception when building this example project, close Visual Studio and rename the repository to a shorter name before building the project.
 
-Refer to the blog for step-by-step guidance on Creating Real-Time KPI Dashboards Using .NET MAUI Toolkit Charts
+If you are facing a path too long exception when building this example project, close Visual Studio and rename the repository to a shorter name before building the project.
 
-
+For a step-by-step procedure, refer to the [Real-Time KPI Dashboard blog](https://www.syncfusion.com/blogs/post/real-time-kpi-dashboard-dotnet-maui)
 
 
