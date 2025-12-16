@@ -8,10 +8,6 @@
     Padding="8"
     BackgroundColor="#0B1220">
 
-    <ContentPage.BindingContext>
-        <local:DashboardViewModel />
-    </ContentPage.BindingContext>
-
     <ContentPage.Resources>
         <ResourceDictionary>
             <Color x:Key="TextLight">#E5E7EB</Color>

@@ -1,13 +1,17 @@
 ﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.DependencyInjection;
 using Syncfusion.Maui.Toolkit.Hosting;
 
 namespace KPIDashboard
 {
     public static class MauiProgram
     {
+        public static IServiceProvider? Services { get; private set; }
+
         public static MauiApp CreateMauiApp()
         {
             var builder = MauiApp.CreateBuilder();
+
             builder
                 .UseMauiApp<App>()
                 .ConfigureSyncfusionToolkit()
@@ -17,11 +21,24 @@ namespace KPIDashboard
                     fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
                 });
 
-#if DEBUG
-    		builder.Logging.AddDebug();
-#endif
+            // Register services
+            // Use Firebase-only service
+            builder.Services.AddSingleton<FirebaseService>();
+            builder.Services.AddSingleton<DashboardViewModel>(sp =>
+            {
+                var db = sp.GetRequiredService<FirebaseService>();
+                var logger = sp.GetService<ILogger<DashboardViewModel>>();
+                return new DashboardViewModel(db, logger);
+            });
 
-            return builder.Build();
+#if DEBUG
+            builder.Logging.AddDebug();
+#endif
+            var app = builder.Build();
+            Services = app.Services;
+            return app;
         }
     }
+
+
 }

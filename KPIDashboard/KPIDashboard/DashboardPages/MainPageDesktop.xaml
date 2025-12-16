@@ -7,9 +7,7 @@
     xmlns:local="clr-namespace:KPIDashboard" Padding="12"
     BackgroundColor="#0B1220">
 
-    <ContentPage.BindingContext>
-        <local:DashboardViewModel x:Name="viewModel"/>
-    </ContentPage.BindingContext>
+    <!-- BindingContext will be set from code-behind via DI -->
 
     <ContentPage.Resources>
         <ResourceDictionary>
@@ -49,7 +47,8 @@
         <Grid Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Padding="4">
             <Border Style="{StaticResource Card}">
                 <Border.StrokeShape>
-                    <RoundRectangle CornerRadius="12"/>
+  
+                  <RoundRectangle CornerRadius="12"/>
                 </Border.StrokeShape>
 
                 <Grid>
@@ -57,8 +56,7 @@
                                    HorizontalOptions="Start"
                                    VerticalOptions="Center">
                         <!-- Title icon chip -->
-                        <Path Margin="5,5,0,0" Fill="White" WidthRequest="45" HeightRequest="45" Data="M20,16L24,16 24,24 20,24z M8,13L12,13 12,24 8,24z M14,9L18,9 18,24 14,24z M24.350006,2.3779907C27.505005,4.3179932,29.936005,7.3150024,31.144989,10.880005L28.920013,11.688995C27.925995,8.7170105,25.936005,6.2019958,23.343994,4.5360107z M16,0C17.798004,0,19.519989,0.31201172,21.134003,0.85998535L20.130005,3.0140076C18.826996,2.598999 17.440002,2.3699951 16,2.3699951 8.4840088,2.3699951 2.3699951,8.4840088 2.3699951,16 2.3699951,23.515991 8.4840088,29.630005 16,29.630005 23.515991,29.630005 29.630005,23.515991 29.630005,16 29.630005,15.73999 29.604004,15.484985 29.591003,15.229004L31.917999,14.381989C31.971985,14.914001 32,15.45401 32,16 32,24.822998 24.821991,32 16,32 7.178009,32 0,24.822998 0,16 0,7.178009 7.178009,0 16,0z" />
-                        <!-- Title text -->
+                        <Path Margin="5,5,0,0" Fill="White" WidthRequest="45" HeightRequest="45" Data="M15.546991,6.2789833L30.027005,6.2789833 30.027005,12.246996 31.999986,12.246996 31.999986,18.141976 30.027005,18.141976 30.027005,24.051983 10.289006,24.051983 10.289006,22.08299 12.25702,22.08299 12.802001,22.08299 28.058015,22.08299 28.058015,18.141976 28.05403,18.141976 28.05403,12.246996 28.058015,12.246996 28.058015,8.2489831 16.303032,8.2489831C16.184014,7.786978 16.064996,7.3250031 15.876031,6.8829865 15.788019,6.6759862 15.657038,6.480979 15.546991,6.2789833z M7.2908282,3.2920065L3.3867488,7.4790155C3.1087427,7.7760161,2.9157391,8.0430167,2.7917366,8.2940171L2.7777362,8.3240173C2.3497276,9.2090192 2.1807241,10.207021 2.2897263,11.213023 2.5306687,13.441465 4.1954684,15.262973 6.320055,15.697015L6.3829889,15.708411 6.3829889,8.3199975 8.3820268,8.3199975 8.3820268,15.687145 8.5701938,15.644285C9.4486807,15.420981 10.255263,14.959281 10.913902,14.29103 11.879922,13.310028 12.412932,12.004025 12.412933,10.613022 12.412932,9.8930206 12.27093,9.1960192 11.990924,8.5420177 11.831921,8.170017 11.577915,7.7980162 11.234908,7.4390155z M7.2748275,0L12.869942,5.8830122C13.363952,6.4020133 13.78296,6.9940145 14.065966,7.6550159 14.453974,8.5610178 14.668978,9.5620198 14.668978,10.613022 14.668978,14.316249 12.002806,17.388006 8.5115747,17.959583L8.3820268,17.978983 8.3820268,24.051973 6.3829889,24.051973 6.3829889,17.992398 6.1856332,17.965751C2.9698515,17.457594 0.40315628,14.759468 0.045681,11.456024 -0.11632252,9.9590206 0.15968323,8.5380177 0.76069546,7.309015 0.76269531,7.3060151 0.76369476,7.3040152 0.76469517,7.3010151 1.0127001,6.7970141 1.3547068,6.3490131 1.7357149,5.9400123z"/>
                         <Label Text="Real-Time KPI Dashboard for Sales performance analysis"
                        FontSize="18"
                        FontAttributes="Bold"
@@ -67,7 +65,6 @@
                 </Grid>
             </Border>
         </Grid>
-
         <!-- Insights row -->
         <Grid Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" ColumnSpacing="12">
             <Grid.ColumnDefinitions>
@@ -93,9 +90,9 @@
                     </Border>
                     <!-- Value + Name -->
                     <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center" Margin="2,0,0,0">
-                        <Label Text="{Binding Source={x:Reference viewModel}, Path=Insights[0].Value}"
+                        <Label Text="{Binding Insights[0].Value}"
                        FontSize="20" FontAttributes="Bold" LineBreakMode="TailTruncation" />
-                        <Label Text="{Binding Source={x:Reference viewModel}, Path=Insights[0].Name}"
+                        <Label Text="{Binding Insights[0].Name}"
                        FontSize="12" FontAttributes="Bold" TextColor="#A5B4FC" />
                     </VerticalStackLayout>
                 </Grid>
@@ -117,9 +114,9 @@
                     </Border>
 
                     <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center" Margin="2,0,0,0">
-                        <Label Text="{Binding Source={x:Reference viewModel}, Path=Insights[1].Value}"
+                        <Label Text="{Binding Insights[1].Value}"
                        FontSize="20" FontAttributes="Bold" LineBreakMode="TailTruncation" />
-                        <Label Text="{Binding Source={x:Reference viewModel}, Path=Insights[1].Name}"
+                        <Label Text="{Binding Insights[1].Name}"
                        FontSize="12" FontAttributes="Bold" TextColor="#A5B4FC" />
                     </VerticalStackLayout>
                 </Grid>
@@ -143,9 +140,9 @@
                     </Border>
 
                     <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center" Margin="2,0,0,0">
-                        <Label Text="{Binding Source={x:Reference viewModel}, Path=Insights[2].Value}"
+                        <Label Text="{Binding Insights[2].Value}"
                        FontSize="20" FontAttributes="Bold" LineBreakMode="TailTruncation" />
-                        <Label Text="{Binding Source={x:Reference viewModel}, Path=Insights[2].Name}"
+                        <Label Text="{Binding Insights[2].Name}"
                        FontSize="12" FontAttributes="Bold" TextColor="#A5B4FC" />
                     </VerticalStackLayout>
                 </Grid>
@@ -162,7 +159,7 @@
                 <Label Text="Revenue Trend (real-time)" Style="{StaticResource CardTitle}" Grid.Row="0"/>
                 <Chart:SfCartesianChart x:Name="chart" Grid.Row="1">
                     <Chart:SfCartesianChart.XAxes>
-                        <Chart:DateTimeAxis  IntervalType="Days" Interval="5" ShowMajorGridLines="False">
+                        <Chart:DateTimeAxis AutoScrollingMode="End" AutoScrollingDeltaType="Months" AutoScrollingDelta="1" IntervalType="Days" Interval="5" ShowMajorGridLines="False">
                             <Chart:DateTimeAxis.LabelStyle>
                                 <Chart:ChartAxisLabelStyle TextColor="LightGray"/>
                             </Chart:DateTimeAxis.LabelStyle>
@@ -256,8 +253,8 @@
                         <Chart:ChartLegend>
                             <Chart:ChartLegend.LabelStyle>
                                 <Chart:ChartLegendLabelStyle TextColor="#E5E7EB"
-                                                       Margin="5"
-                                                       FontFamily="PlaywriteAR-Regular"/>
+                                                             Margin="5"
+                                                             FontFamily="PlaywriteAR-Regular"/>
                             </Chart:ChartLegend.LabelStyle>
                         </Chart:ChartLegend>
                     </Chart:SfCircularChart.Legend>

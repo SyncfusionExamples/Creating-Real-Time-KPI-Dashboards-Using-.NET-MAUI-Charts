@@ -1,3 +1,5 @@
+using Microsoft.Extensions.DependencyInjection;
+
 namespace KPIDashboard.DashboardPages
 {
     public partial class MainPageMobile : ContentPage
@@ -5,6 +7,9 @@ namespace KPIDashboard.DashboardPages
         public MainPageMobile()
         {
             InitializeComponent();
+
+            BindingContext = MauiProgram.Services!
+              .GetRequiredService<KPIDashboard.DashboardViewModel>();
         }
     }
 }
