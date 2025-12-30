@@ -159,7 +159,7 @@
                 <Label Text="Revenue Trend (real-time)" Style="{StaticResource CardTitle}" Grid.Row="0"/>
                 <Chart:SfCartesianChart x:Name="chart" Grid.Row="1">
                     <Chart:SfCartesianChart.XAxes>
-                        <Chart:DateTimeAxis AutoScrollingMode="End" AutoScrollingDeltaType="Months" AutoScrollingDelta="1" IntervalType="Days" Interval="5" ShowMajorGridLines="False">
+                        <Chart:DateTimeAxis AutoScrollingMode="End" AutoScrollingDeltaType="Months" AutoScrollingDelta="1" IntervalType="Days" Interval="1" ShowMajorGridLines="False">
                             <Chart:DateTimeAxis.LabelStyle>
                                 <Chart:ChartAxisLabelStyle TextColor="LightGray"/>
                             </Chart:DateTimeAxis.LabelStyle>
