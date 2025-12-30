@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.DependencyInjection;
 using Syncfusion.Maui.Toolkit.Hosting;
 
 namespace KPIDashboard
