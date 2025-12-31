@@ -1,4 +1,3 @@
-
 namespace KPIDashboard.DashboardPages
 {
     public partial class MainPageMobile : ContentPage

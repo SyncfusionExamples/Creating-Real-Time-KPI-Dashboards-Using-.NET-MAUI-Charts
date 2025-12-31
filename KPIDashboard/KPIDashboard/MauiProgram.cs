@@ -21,7 +21,6 @@ namespace KPIDashboard
                 });
 
             // Register services
-            // Use Firebase-only service
             builder.Services.AddSingleton<FirebaseService>();
             builder.Services.AddSingleton<DashboardViewModel>(sp =>
             {
