@@ -4,216 +4,345 @@ using System.Text.Json;
 namespace KPIDashboard
 {
     /// <summary>
-    /// FirebaseService: per-session isolation, SSE listener, optional simulator.
-    /// Works cross-platform (.NET MAUI / Console) as it's pure HTTP/JSON.
+    /// Provides real-time connectivity to Firebase Realtime Database for the KPI dashboard demo.
+    /// Implements per-session isolation, an SSE (Server-Sent Events) listener for live updates,
+    /// and an optional simulator that pushes demo records at a configurable interval.
     /// </summary>
     public sealed class FirebaseService : IAsyncDisposable
     {
-        private static readonly HttpClient _httpClient = new();
-        private static readonly JsonSerializerOptions _jsonOptions = new() { PropertyNameCaseInsensitive = true };
+        /// <summary>
+        /// Shared HTTP client used for all network operations.
+        /// </summary>
+        private static readonly HttpClient HttpClientShared = new();
 
         // Events
+        /// <summary>
+        /// Raised when a new sales record is received from Firebase.
+        /// </summary>
         public event EventHandler<SalesRecord>? NewSalesRecord;
-        public event EventHandler<string>? KpiChanged; // reserved
 
         // Runtime state
-        private Task? _streamTask;
-        private Task? _simTask;
-        private CancellationTokenSource? _streamCts;
-        private string? _recordsBasePath; // WITHOUT .json
-        private DateTime _simCurrentDate;
-        private readonly Random _rand = new();
+        private Task? StreamTask;
+        private Task? SimulationTask;
+        private CancellationTokenSource? StreamCancellationSource;
 
-        // Per-session id (env override or auto GUID)
-        private readonly string _instanceId =
+        /// <summary>
+        /// Base path to the records (WITHOUT the .json suffix).
+        /// </summary>
+        private string? RecordsBasePath;
+
+        /// <summary>
+        /// Current date used by the simulator when pushing demo records.
+        /// </summary>
+        private DateTime SimulationCurrentDate;
+
+        /// <summary>
+        /// Random number generator used for demo data.
+        /// </summary>
+        private readonly Random RandomGenerator = new();
+
+        /// <summary>
+        /// Per-session instance ID (environment override via SESSION_ID or a generated GUID).
+        /// </summary>
+        private readonly string InstanceId =
             Environment.GetEnvironmentVariable("SESSION_ID") ?? Guid.NewGuid().ToString("N");
 
-        public FirebaseService(string? _ = null) { }
-
+        /// <summary>
+        /// Starts the SSE listener and (optionally) the demo data simulator for this session.
+        /// </summary>
+        /// <param name="externalToken">Cancellation token provided by the caller.</param>
         public async Task StartListeningAsync(CancellationToken externalToken = default)
         {
             // Prevent double-start
-            if (_streamTask is not null && !_streamTask.IsCompleted) return;
+            if (StreamTask is not null && !StreamTask.IsCompleted)
+            {
+                return;
+            }
 
-            _streamCts = CancellationTokenSource.CreateLinkedTokenSource(externalToken);
-            var ct = _streamCts.Token;
+            StreamCancellationSource = CancellationTokenSource.CreateLinkedTokenSource(externalToken);
+            var linkedToken = StreamCancellationSource.Token;
 
             // Base URL: never end with .json; trim trailing slash
-            var baseUrl = Environment.GetEnvironmentVariable("FIREBASE_BASE")
+            var firebaseBaseUrl = Environment.GetEnvironmentVariable("FIREBASE_BASE")
                 ?? "https://kpi-dashboard-demo-aa2ed-default-rtdb.asia-southeast1.firebasedatabase.app";
-            baseUrl = baseUrl.TrimEnd('/');
+            firebaseBaseUrl = firebaseBaseUrl.TrimEnd('/');
 
             // Per-session path (append .json ONLY to data path)
-            var sessionPathJson = $"/sessions/{_instanceId}/salesrecords.json";
-            var fullJsonUrl = baseUrl + sessionPathJson;
+            var sessionPathJson = $"/sessions/{InstanceId}/salesrecords.json";
+            var fullJsonUrl = firebaseBaseUrl + sessionPathJson;
 
             // Store base path WITHOUT .json
-            _recordsBasePath = fullJsonUrl.Substring(0, fullJsonUrl.Length - ".json".Length);
+            RecordsBasePath = fullJsonUrl.Substring(0, fullJsonUrl.Length - ".json".Length);
 
             // Optional: clear only this session path
             var clearOnStart = Environment.GetEnvironmentVariable("FIREBASE_CLEAR_ON_START") == "1";
             if (clearOnStart)
             {
-                try { await ClearPathAsync(_recordsBasePath + ".json", ct).ConfigureAwait(false); } catch { }
+                try
+                {
+                    await ClearPathAsync(RecordsBasePath + ".json", linkedToken).ConfigureAwait(false);
+                }
+                catch (Exception)
+                {
+                    // Swallow for demo stability; in production, log the exception.
+                }
             }
 
             // Simulator start date
             var startDateStr = Environment.GetEnvironmentVariable("FIREBASE_START_DATE");
-            _simCurrentDate = (!string.IsNullOrEmpty(startDateStr) && DateTime.TryParse(startDateStr, out var parsed))
-                ? parsed
+            SimulationCurrentDate = (!string.IsNullOrEmpty(startDateStr) && DateTime.TryParse(startDateStr, out var parsedDate))
+                ? parsedDate
                 : DateTime.UtcNow;
 
             // Start SSE listener (read-only) for THIS session
-            _streamTask = StartSseStreamAsync(_recordsBasePath + ".json", ct);
+            StreamTask = StartSseStreamAsync(RecordsBasePath + ".json", linkedToken);
 
-            var delayMs = int.TryParse(Environment.GetEnvironmentVariable("FIREBASE_SIM_DELAY_MS"), out var d) ? d : 1000;
+            // Simulator delay (milliseconds), default 1000
+            var simulatorDelayMs = int.TryParse(Environment.GetEnvironmentVariable("FIREBASE_SIM_DELAY_MS"), out var parsedDelay)
+                ? parsedDelay
+                : 1000;
 
-            _simTask = Task.Run(async () =>
+            // Push demo records in the background
+            SimulationTask = Task.Run(async () =>
             {
                 try
                 {
-                    while (!ct.IsCancellationRequested)
+                    while (!linkedToken.IsCancellationRequested)
                     {
-                        await PushSimulatedRecordAsync(ct).ConfigureAwait(false);
-                        _simCurrentDate = _simCurrentDate.AddDays(1);
-                        try { await Task.Delay(delayMs, ct).ConfigureAwait(false); } catch (OperationCanceledException) { break; }
+                        await PushSimulatedRecordAsync(linkedToken).ConfigureAwait(false);
+                        SimulationCurrentDate = SimulationCurrentDate.AddDays(1);
+                        try
+                        {
+                            await Task.Delay(simulatorDelayMs, linkedToken).ConfigureAwait(false);
+                        }
+                        catch (OperationCanceledException)
+                        {
+                            break;
+                        }
                     }
                 }
-                catch (OperationCanceledException) { }
-            }, ct);
-
+                catch (OperationCanceledException)
+                {
+                    // Expected during cancellation; no action required.
+                }
+            }, linkedToken);
         }
 
-        private async Task StartSseStreamAsync(string url, CancellationToken ct)
+        /// <summary>
+        /// Opens a long-lived SSE stream to the specified Firebase RTDB URL and dispatches incoming records.
+        /// Includes exponential backoff on failures.
+        /// </summary>
+        /// <param name="url">The RTDB JSON URL to stream.</param>
+        /// <param name="cancellationToken">Cancellation token to stop the stream.</param>
+        private async Task StartSseStreamAsync(string url, CancellationToken cancellationToken)
         {
             var backoffMs = 1000;
 
-            while (!ct.IsCancellationRequested)
+            while (!cancellationToken.IsCancellationRequested)
             {
                 try
                 {
-                    using var req = new HttpRequestMessage(HttpMethod.Get, url);
-                    req.Headers.Accept.Clear();
-                    req.Headers.Accept.ParseAdd("text/event-stream");
+                    using var request = new HttpRequestMessage(HttpMethod.Get, url);
+                    request.Headers.Accept.Clear();
+                    request.Headers.Accept.ParseAdd("text/event-stream");
 
-                    using var resp = await _httpClient.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
-                    resp.EnsureSuccessStatusCode();
+                    using var response = await HttpClientShared.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+                    response.EnsureSuccessStatusCode();
 
-                    using var stream = await resp.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
+                    using var stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
                     using var reader = new StreamReader(stream);
 
-                    backoffMs = 1000; // reset on success
+                    // Reset backoff on success
+                    backoffMs = 1000;
 
-                    string? line;
+                    string? currentLine;
                     var dataBuilder = new StringBuilder();
 
-                    while (!ct.IsCancellationRequested && (line = await reader.ReadLineAsync().ConfigureAwait(false)) is not null)
+                    while (!cancellationToken.IsCancellationRequested && (currentLine = await reader.ReadLineAsync().ConfigureAwait(false)) is not null)
                     {
-                        if (line.StartsWith(":")) continue; // keep-alive
-
-                        if (line.StartsWith("data:"))
+                        // Skip keep-alive comments
+                        if (currentLine.StartsWith(":"))
                         {
-                            if (dataBuilder.Length > 0) dataBuilder.Append(line[5..].TrimStart());
-                            var payload = line.Length > 5 ? line.Substring(5).TrimStart() : string.Empty; // safe slice
+                            continue;
+                        }
+
+                        // Accumulate data: lines
+                        if (currentLine.StartsWith("data:"))
+                        {
+                            if (dataBuilder.Length > 0)
+                            {
+                                dataBuilder.Append(currentLine[5..].TrimStart());
+                            }
+
+                            var payload = currentLine.Length > 5 ? currentLine.Substring(5).TrimStart() : string.Empty; // safe slice
                             dataBuilder.Append(payload);
                             continue;
                         }
 
                         // Blank line => end of SSE event
-                        if (string.IsNullOrWhiteSpace(line))
+                        if (string.IsNullOrWhiteSpace(currentLine))
                         {
                             if (dataBuilder.Length > 0)
                             {
                                 var json = dataBuilder.ToString();
                                 dataBuilder.Clear();
+
                                 try
                                 {
                                     using var doc = JsonDocument.Parse(json);
                                     var root = doc.RootElement;
 
-                                    root.TryGetProperty("path", out var pathEl);
-                                    var pathStr = pathEl.ValueKind == JsonValueKind.String ? pathEl.GetString() ?? string.Empty : string.Empty;
+                                    root.TryGetProperty("path", out var pathElement);
+                                    var pathString = pathElement.ValueKind == JsonValueKind.String ? pathElement.GetString() ?? string.Empty : string.Empty;
 
-                                    if (root.TryGetProperty("data", out var dataEl))
+                                    if (root.TryGetProperty("data", out var dataElement))
                                     {
-                                        if (dataEl.ValueKind == JsonValueKind.Null)
+                                        if (dataElement.ValueKind == JsonValueKind.Null)
                                         {
-                                            // deleted or empty
+                                            // Deleted or empty
                                         }
-                                        else if (dataEl.ValueKind == JsonValueKind.Object)
+                                        else if (dataElement.ValueKind == JsonValueKind.Object)
                                         {
                                             // Child update => single record
-                                            if (!string.IsNullOrEmpty(pathStr) && pathStr != "/")
+                                            if (!string.IsNullOrEmpty(pathString) && pathString != "/")
                                             {
-                                                if (TryParseFbRecord(dataEl, out var rec))
-                                                    try { NewSalesRecord?.Invoke(this, ToSalesRecord(rec)); } catch { }
+                                                if (TryParseFbRecord(dataElement, out var fbRecord))
+                                                {
+                                                    try
+                                                    {
+                                                        NewSalesRecord?.Invoke(this, ToSalesRecord(fbRecord));
+                                                    }
+                                                    catch (Exception)
+                                                    {
+                                                        // Swallow for demo; consider logging in production.
+                                                    }
+                                                }
                                             }
                                             else
                                             {
                                                 // Snapshot/map => iterate children
-                                                foreach (var prop in dataEl.EnumerateObject())
+                                                foreach (var property in dataElement.EnumerateObject())
                                                 {
-                                                    var v = prop.Value;
-                                                    if (v.ValueKind != JsonValueKind.Object) continue;
-                                                    if (TryParseFbRecord(v, out var rec))
-                                                        try { NewSalesRecord?.Invoke(this, ToSalesRecord(rec)); } catch { }
+                                                    var value = property.Value;
+                                                    if (value.ValueKind != JsonValueKind.Object)
+                                                    {
+                                                        continue;
+                                                    }
+
+                                                    if (TryParseFbRecord(value, out var fbRecord))
+                                                    {
+                                                        try
+                                                        {
+                                                            NewSalesRecord?.Invoke(this, ToSalesRecord(fbRecord));
+                                                        }
+                                                        catch (Exception)
+                                                        {
+                                                            // Swallow for demo; consider logging in production.
+                                                        }
+                                                    }
                                                 }
                                             }
                                         }
-                                        else if (dataEl.ValueKind == JsonValueKind.Array)
+                                        else if (dataElement.ValueKind == JsonValueKind.Array)
                                         {
-                                            var list = ParseFbArray(dataEl);
-                                            foreach (var r in list)
-                                                try { NewSalesRecord?.Invoke(this, ToSalesRecord(r)); } catch { }
+                                            var list = ParseFbArray(dataElement);
+                                            foreach (var fbRecord in list)
+                                            {
+                                                try
+                                                {
+                                                    NewSalesRecord?.Invoke(this, ToSalesRecord(fbRecord));
+                                                }
+                                                catch (Exception)
+                                                {
+                                                    // Swallow for demo; consider logging in production.
+                                                }
+                                            }
                                         }
                                     }
                                 }
-                                catch { /* swallow for demo stability or log */ }
+                                catch (Exception)
+                                {
+                                    // Swallow for demo stability; consider logging.
+                                }
                             }
+
                             continue;
                         }
                     }
                 }
-                catch (OperationCanceledException) { break; }
-                catch
+                catch (OperationCanceledException)
                 {
-                    try { await Task.Delay(backoffMs, ct).ConfigureAwait(false); } catch (OperationCanceledException) { break; }
-                    backoffMs = Math.Min(backoffMs * 2, 15000); // exponential backoff
+                    break;
+                }
+                catch (Exception)
+                {
+                    try
+                    {
+                        await Task.Delay(backoffMs, cancellationToken).ConfigureAwait(false);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        break;
+                    }
+
+                    // Exponential backoff (max 15s)
+                    backoffMs = Math.Min(backoffMs * 2, 15000);
                 }
             }
         }
 
-        private async Task PushSimulatedRecordAsync(CancellationToken ct)
+        /// <summary>
+        /// Pushes a simulated sales record to the current RecordsBasePath.
+        /// </summary>
+        /// <param name="cancellationToken">Cancellation token for the operation.</param>
+        private async Task PushSimulatedRecordAsync(CancellationToken cancellationToken)
         {
-            var rec = new Dictionary<string, object?>
+            var record = new Dictionary<string, object?>
             {
-                ["Date"] = _simCurrentDate.ToString("o"),
-                ["SalesChannel"] = new[] { "Retail", "In-Store", "Online" }[_rand.Next(0, 3)],
-                ["Region"] = new[] { "East", "South", "West", "North" }[_rand.Next(0, 4)],
-                ["Sales"] = Math.Round(100 + _rand.NextDouble() * 1000.0, 2),
-                ["Quantity"] = _rand.Next(1, 20),
-                ["SourceInstanceId"] = _instanceId
+                ["Date"] = SimulationCurrentDate.ToString("o"),
+                ["SalesChannel"] = new[] { "Retail", "In-Store", "Online" }[RandomGenerator.Next(0, 3)],
+                ["Region"] = new[] { "East", "South", "West", "North" }[RandomGenerator.Next(0, 4)],
+                ["Sales"] = Math.Round(100 + RandomGenerator.NextDouble() * 1000.0, 2),
+                ["Quantity"] = RandomGenerator.Next(1, 20),
+                ["SourceInstanceId"] = InstanceId
             };
 
             try
             {
-                if (string.IsNullOrEmpty(_recordsBasePath)) return;
-                var postUrl = _recordsBasePath + ".json";
-                var content = new StringContent(JsonSerializer.Serialize(rec), Encoding.UTF8, "application/json");
-                using var resp = await _httpClient.PostAsync(postUrl, content, ct).ConfigureAwait(false);
+                if (string.IsNullOrEmpty(RecordsBasePath))
+                {
+                    return;
+                }
+
+                var postUrl = RecordsBasePath + ".json";
+                var content = new StringContent(JsonSerializer.Serialize(record), Encoding.UTF8, "application/json");
+
+                using var response = await HttpClientShared.PostAsync(postUrl, content, cancellationToken).ConfigureAwait(false);
                 // SSE listener will receive child-added event
             }
-            catch { }
+            catch (Exception)
+            {
+                // Swallow for demo stability; consider logging in production.
+            }
         }
 
-        private async Task ClearPathAsync(string jsonUrl, CancellationToken ct)
+        /// <summary>
+        /// Clears the specified RTDB JSON path using HTTP DELETE.
+        /// </summary>
+        /// <param name="jsonUrl">The full JSON URL to delete.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        private async Task ClearPathAsync(string jsonUrl, CancellationToken cancellationToken)
         {
-            using var req = new HttpRequestMessage(HttpMethod.Delete, jsonUrl);
-            using var resp = await _httpClient.SendAsync(req, ct).ConfigureAwait(false);
-            resp.EnsureSuccessStatusCode();
+            using var request = new HttpRequestMessage(HttpMethod.Delete, jsonUrl);
+            using var response = await HttpClientShared.SendAsync(request, cancellationToken).ConfigureAwait(false);
+            response.EnsureSuccessStatusCode();
         }
 
         // --- Parsing helpers ---
+
+        /// <summary>
+        /// Internal DTO used to hold raw Firebase sales record data.
+        /// </summary>
         private sealed class FbSalesRecord
         {
             public DateTime Date { get; set; }
@@ -224,83 +353,154 @@ namespace KPIDashboard
             public string? SourceInstanceId { get; set; }
         }
 
-        private static List<FbSalesRecord> ParseFbArray(JsonElement arrayEl)
+        /// <summary>
+        /// Parses a JSON array element into a list of <see cref="FbSalesRecord"/>.
+        /// </summary>
+        private static List<FbSalesRecord> ParseFbArray(JsonElement arrayElement)
         {
             var list = new List<FbSalesRecord>();
-            foreach (var el in arrayEl.EnumerateArray())
+
+            foreach (var element in arrayElement.EnumerateArray())
             {
                 try
                 {
-                    var rec = new FbSalesRecord
+                    var record = new FbSalesRecord
                     {
-                        Date = el.TryGetProperty("Date", out var d) && d.ValueKind == JsonValueKind.String ? DateTime.Parse(d.GetString()!) : el.GetProperty("Date").GetDateTime(),
-                        SalesChannel = el.TryGetProperty("SalesChannel", out var sc) && sc.ValueKind == JsonValueKind.String ? sc.GetString() : null,
-                        Region = el.TryGetProperty("Region", out var r) && r.ValueKind == JsonValueKind.String ? r.GetString() : null,
-                        Sales = el.TryGetProperty("Sales", out var s) ? s : default,
-                        Quantity = el.TryGetProperty("Quantity", out var q) && q.ValueKind == JsonValueKind.Number ? q.GetInt32() : (int?)null,
-                        SourceInstanceId = el.TryGetProperty("SourceInstanceId", out var src) && src.ValueKind == JsonValueKind.String ? src.GetString() : null
+                        Date = element.TryGetProperty("Date", out var dateEl) && dateEl.ValueKind == JsonValueKind.String ? DateTime.Parse(dateEl.GetString()!) : element.GetProperty("Date").GetDateTime(),
+                        SalesChannel = element.TryGetProperty("SalesChannel", out var scEl) && scEl.ValueKind == JsonValueKind.String ? scEl.GetString() : null,
+                        Region = element.TryGetProperty("Region", out var regionEl) && regionEl.ValueKind == JsonValueKind.String ? regionEl.GetString() : null,
+                        Sales = element.TryGetProperty("Sales", out var salesEl) ? salesEl : default,
+                        Quantity = element.TryGetProperty("Quantity", out var qtyEl) && qtyEl.ValueKind == JsonValueKind.Number ? qtyEl.GetInt32() : (int?)null,
+                        SourceInstanceId = element.TryGetProperty("SourceInstanceId", out var srcEl) && srcEl.ValueKind == JsonValueKind.String ? srcEl.GetString() : null
                     };
-                    list.Add(rec);
+
+                    list.Add(record);
                 }
-                catch { }
+                catch (Exception)
+                {
+                    // Swallow for demo stability; consider logging.
+                }
             }
+
             return list;
         }
 
-        private static bool TryParseFbRecord(JsonElement el, out FbSalesRecord rec)
+        /// <summary>
+        /// Attempts to parse a single Firebase record object.
+        /// </summary>
+        /// <param name="element">JSON element representing the record.</param>
+        /// <param name="record">Parsed record output (if successful).</param>
+        /// <returns>True if parsing succeeded; otherwise false.</returns>
+        private static bool TryParseFbRecord(JsonElement element, out FbSalesRecord record)
         {
-            rec = default!;
+            record = default!;
+
             try
             {
-                var date = DateTime.MinValue;
-                if (el.TryGetProperty("Date", out var d))
+                var parsedDate = DateTime.MinValue;
+                if (element.TryGetProperty("Date", out var dateEl))
                 {
-                    if (d.ValueKind == JsonValueKind.String) date = DateTime.Parse(d.GetString()!);
-                    else date = d.GetDateTime();
+                    if (dateEl.ValueKind == JsonValueKind.String)
+                    {
+                        parsedDate = DateTime.Parse(dateEl.GetString()!);
+                    }
+                    else
+                    {
+                        parsedDate = dateEl.GetDateTime();
+                    }
                 }
-                else return false;
+                else
+                {
+                    return false;
+                }
 
-                var salesChannel = el.TryGetProperty("SalesChannel", out var sc) && sc.ValueKind == JsonValueKind.String ? sc.GetString() : null;
-                var region = el.TryGetProperty("Region", out var r) && r.ValueKind == JsonValueKind.String ? r.GetString() : null;
-                var sales = el.TryGetProperty("Sales", out var s) ? s : default;
-                var quantity = el.TryGetProperty("Quantity", out var q) && q.ValueKind == JsonValueKind.Number ? q.GetInt32() : (int?)null;
-                var sourceInstanceId = el.TryGetProperty("SourceInstanceId", out var src) && src.ValueKind == JsonValueKind.String ? src.GetString() : null;
+                var salesChannel = element.TryGetProperty("SalesChannel", out var scEl) && scEl.ValueKind == JsonValueKind.String ? scEl.GetString() : null;
+                var region = element.TryGetProperty("Region", out var regionEl) && regionEl.ValueKind == JsonValueKind.String ? regionEl.GetString() : null;
+                var sales = element.TryGetProperty("Sales", out var salesEl) ? salesEl : default;
+                var quantity = element.TryGetProperty("Quantity", out var qtyEl) && qtyEl.ValueKind == JsonValueKind.Number ? qtyEl.GetInt32() : (int?)null;
+                var sourceInstanceId = element.TryGetProperty("SourceInstanceId", out var srcEl) && srcEl.ValueKind == JsonValueKind.String ? srcEl.GetString() : null;
 
-                rec = new FbSalesRecord { Date = date, SalesChannel = salesChannel, Region = region, Sales = sales, Quantity = quantity, SourceInstanceId = sourceInstanceId };
+                record = new FbSalesRecord
+                {
+                    Date = parsedDate,
+                    SalesChannel = salesChannel,
+                    Region = region,
+                    Sales = sales,
+                    Quantity = quantity,
+                    SourceInstanceId = sourceInstanceId
+                };
+
                 return true;
             }
-            catch { return false; }
+            catch (Exception)
+            {
+                return false;
+            }
         }
 
-        private static double ParseSalesValue(JsonElement e)
+        /// <summary>
+        /// Parses the numeric value of the Sales field from a <see cref="JsonElement"/>.
+        /// </summary>
+        private static double ParseSalesValue(JsonElement element)
         {
-            if (e.ValueKind == JsonValueKind.Number) return e.GetDouble();
-            if (e.ValueKind == JsonValueKind.String && double.TryParse(e.GetString(), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var v)) return v;
+            if (element.ValueKind == JsonValueKind.Number)
+            {
+                return element.GetDouble();
+            }
+
+            if (element.ValueKind == JsonValueKind.String && double.TryParse(element.GetString(), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var value))
+            {
+                return value;
+            }
+
             return 0.0;
         }
 
-        private static SalesRecord ToSalesRecord(FbSalesRecord it) => new()
+        /// <summary>
+        /// Converts an internal <see cref="FbSalesRecord"/> into the public <see cref="SalesRecord"/> model.
+        /// </summary>
+        private static SalesRecord ToSalesRecord(FbSalesRecord input) => new()
         {
-            Date = it.Date,
-            Channel = it.SalesChannel,
-            Region = it.Region,
-            UnitsSold = it.Quantity ?? 1,
-            Revenue = ParseSalesValue(it.Sales),
-            SourceInstanceId = it.SourceInstanceId
+            Date = input.Date,
+            Channel = input.SalesChannel,
+            Region = input.Region,
+            UnitsSold = input.Quantity ?? 1,
+            Revenue = ParseSalesValue(input.Sales),
+            SourceInstanceId = input.SourceInstanceId
         };
 
+        /// <summary>
+        /// Disposes the service by cancelling background tasks and waiting for their completion.
+        /// </summary>
         public async ValueTask DisposeAsync()
         {
             try
             {
-                _streamCts?.Cancel();
-                if (_streamTask is not null) await _streamTask;
-                if (_simTask is not null) await _simTask;
+                StreamCancellationSource?.Cancel();
+
+                if (StreamTask is not null)
+                {
+                    await StreamTask;
+                }
+
+                if (SimulationTask is not null)
+                {
+                    await SimulationTask;
+                }
             }
-            catch { }
-            finally { _streamCts?.Dispose(); }
+            catch (Exception)
+            {
+                // Swallow for demo stability; consider logging.
+            }
+            finally
+            {
+                StreamCancellationSource?.Dispose();
+            }
         }
 
+        /// <summary>
+        /// No-op seed method (reserved for future use).
+        /// </summary>
         public Task EnsureSeedAsync(CancellationToken ct = default) => Task.CompletedTask;
     }
 }
