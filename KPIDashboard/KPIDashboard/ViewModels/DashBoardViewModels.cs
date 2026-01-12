@@ -13,10 +13,6 @@ namespace KPIDashboard
         private readonly CancellationTokenSource _cts = new();
         private const int MaxPoints = 60;
 
-        // Firebase RTDB base URL
-        private readonly string _firebaseBaseUrl;
-        private readonly ILogger<DashboardViewModel>? _logger;
-
         // Chart-bound collections
         public ObservableCollection<TimePoint> RevenueTrend { get; } = new();
         public ObservableCollection<CategoryPoint> LeadsByChannel { get; } = new();
@@ -38,11 +34,9 @@ namespace KPIDashboard
 
         private readonly FirebaseService _db;
 
-        public DashboardViewModel(FirebaseService db, ILogger<DashboardViewModel>? logger)
+        public DashboardViewModel(FirebaseService db)
         {
             _db = db;
-            _logger = logger;
-            _firebaseBaseUrl = Environment.GetEnvironmentVariable("FIREBASE_BASE") ?? "https://kpi-dashboard-e99ce-default-rtdb.firebaseio.com";
 
             CustomBrushes = new List<Brush>
             {
@@ -65,6 +59,11 @@ namespace KPIDashboard
             _ = InitializeAsync();
         }
 
+        public DashboardViewModel(FirebaseService db, ILogger<DashboardViewModel>? logger) : this(db)
+        {
+            // Logger parameter kept for backward compatibility; not used.
+        }
+
         /// <summary>
         /// Initializes realtime listening by subscribing to NewSalesRecord, seeding the database if needed,
         /// and starting the Firebase SSE stream. Emits initial records, then one per second in demo mode.
@@ -73,14 +72,8 @@ namespace KPIDashboard
         {
             try
             {
-                // Per-row realtime updates
                 _db.NewSalesRecord += (_, rec) => OnNewSalesRecord(rec);
-
-                // Ensure DB has seed and state row; seeds initial 60 if empty
                 await _db.EnsureSeedAsync(_cts.Token);
-
-                // Start listeners. Firebase loop will emit initial 60 records via NewSalesRecord events
-                // and then emit one record per second.
                 await _db.StartListeningAsync(_cts.Token);
             }
             catch (Exception ex)
@@ -112,9 +105,11 @@ namespace KPIDashboard
                 return;
             }
 
-            if (RevenueTrend.Count >= 10)
+            int count = RevenueTrend.Count;
+            if (count >= 2)
             {
-                double first = RevenueTrend[^10].Value;
+                int window = Math.Min(count, 10);
+                double first = RevenueTrend[count - window].Value;
                 double last = RevenueTrend[^1].Value;
                 double delta = last - first;
                 Insights[0].Value = delta >= 0 ? $"+{delta:0}" : $"{delta:0}";
@@ -174,7 +169,6 @@ namespace KPIDashboard
             // Append to buffers under lock; take snapshots for UI thread
             lock (_bufferLock)
             {
-                // Trend buffer (cap 60)
                 if (_trendBuffer.Count >= MaxPoints)
                 {
                     _trendBuffer.RemoveAt(0);
@@ -183,7 +177,6 @@ namespace KPIDashboard
                 _trendBuffer.Add(new TimePoint { Time = rec.Date, Value = (double)rec.Revenue });
                 trendSnapshot = _trendBuffer.ToArray();
 
-                // Record buffer (cap 60)
                 if (_recordBuffer.Count >= MaxPoints)
                 {
                     _recordBuffer.RemoveAt(0);
@@ -191,26 +184,34 @@ namespace KPIDashboard
 
                 _recordBuffer.Add(rec);
 
-                // Precompute region share from buffer to avoid recomputing on UI thread
                 regionSnapshot = BuildRevenueByRegionFromBuffer(_recordBuffer);
             }
 
             MainThread.BeginInvokeOnMainThread(() =>
             {
-                // Revenue trend
-                RevenueTrend.Clear();
-                foreach (var point in trendSnapshot)
+                // Revenue trend (append/remove instead of full clear to reduce churn)
+                if (RevenueTrend.Count == 0)
                 {
-                    RevenueTrend.Add(point);
+                    foreach (var p in trendSnapshot)
+                    {
+                        RevenueTrend.Add(p);
+                    }
+                }
+                else
+                {
+                    var last = trendSnapshot[^1];
+                    RevenueTrend.Add(last);
+                    if (RevenueTrend.Count > MaxPoints)
+                    {
+                        RevenueTrend.RemoveAt(0);
+                    }
                 }
 
-                // Units by channel (absolute sum)
                 var channelKey = rec.Channel ?? "(unknown)";
                 _unitsByChannel.TryGetValue(channelKey, out var units);
                 _unitsByChannel[channelKey] = units + rec.UnitsSold;
                 Rebind(LeadsByChannel, _unitsByChannel);
 
-                // Sales progress (Actual)
                 _currentActual += (double)rec.Revenue;
                 if (SalesActual.Count == 0)
                 {
@@ -230,14 +231,12 @@ namespace KPIDashboard
                     SalesRemaining[0].Value = Math.Max(0, _target - _currentActual);
                 }
 
-                // Revenue by Region from rolling buffer
                 RevenueByRegion.Clear();
                 foreach (var regionPoint in regionSnapshot)
                 {
                     RevenueByRegion.Add(regionPoint);
                 }
 
-                // Update insights after region rebinding so Top Region is fresh
                 UpdateInsightsValues();
             });
         }

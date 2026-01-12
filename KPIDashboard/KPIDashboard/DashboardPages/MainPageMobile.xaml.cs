@@ -1,6 +1,3 @@
-using KPIDashboard;
-using Microsoft.Extensions.Logging;
-
 namespace KPIDashboard.DashboardPages
 {
     public partial class MainPageMobile : ContentPage
@@ -14,11 +11,3 @@ namespace KPIDashboard.DashboardPages
         }
     }
 }
-
-
-
-
-
-
-
-

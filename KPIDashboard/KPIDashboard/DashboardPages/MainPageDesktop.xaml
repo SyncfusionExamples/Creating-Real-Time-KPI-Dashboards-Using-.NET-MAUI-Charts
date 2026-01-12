@@ -7,8 +7,6 @@
     xmlns:local="clr-namespace:KPIDashboard" Padding="12"
     BackgroundColor="#0B1220">
 
-    <!-- BindingContext will be set from code-behind via DI -->
-
     <ContentPage.Resources>
         <ResourceDictionary>
             <Color x:Key="TextLight">#E5E7EB</Color>
