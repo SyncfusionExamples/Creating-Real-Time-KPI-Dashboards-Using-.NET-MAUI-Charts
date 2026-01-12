@@ -7,7 +7,7 @@ namespace KPIDashboard.DashboardPages
             InitializeComponent();
 
             BindingContext = MauiProgram.Services!
-                .GetRequiredService<KPIDashboard.DashboardViewModel>();
+                .GetRequiredService<DashboardViewModel>();
         }
     }
 }

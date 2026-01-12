@@ -8,7 +8,7 @@ namespace KPIDashboard
     /// Implements per-session isolation, an SSE (Server-Sent Events) listener for live updates,
     /// and an optional simulator that pushes demo records at a configurable interval.
     /// </summary>
-public sealed class FirebaseService : IAsyncDisposable
+    public sealed class FirebaseService : IAsyncDisposable
     {
         #region Fields and Events
         /// <summary>
@@ -57,7 +57,6 @@ public sealed class FirebaseService : IAsyncDisposable
         /// <param name="externalToken">Cancellation token provided by the caller.</param>
         public async Task StartListeningAsync(CancellationToken externalToken = default)
         {
-            // Prevent double-start
             if (StreamTask is not null && !StreamTask.IsCompleted)
             {
                 return;
@@ -66,19 +65,15 @@ public sealed class FirebaseService : IAsyncDisposable
             StreamCancellationSource = CancellationTokenSource.CreateLinkedTokenSource(externalToken);
             var linkedToken = StreamCancellationSource.Token;
 
-            // Base URL: never end with .json; trim trailing slash
             var firebaseBaseUrl = Environment.GetEnvironmentVariable("FIREBASE_BASE")
                 ?? "https://kpi-dashboard-demo-aa2ed-default-rtdb.asia-southeast1.firebasedatabase.app";
             firebaseBaseUrl = firebaseBaseUrl.TrimEnd('/');
 
-            // Per-session path (append .json ONLY to data path)
             var sessionPathJson = $"/sessions/{InstanceId}/salesrecords.json";
             var fullJsonUrl = firebaseBaseUrl + sessionPathJson;
 
-            // Store base path WITHOUT .json
             RecordsBasePath = fullJsonUrl.Substring(0, fullJsonUrl.Length - ".json".Length);
 
-            // Optional: clear only this session path
             var clearOnStart = Environment.GetEnvironmentVariable("FIREBASE_CLEAR_ON_START") == "1";
             if (clearOnStart)
             {
@@ -92,21 +87,17 @@ public sealed class FirebaseService : IAsyncDisposable
                 }
             }
 
-            // Simulator start date
             var startDateStr = Environment.GetEnvironmentVariable("FIREBASE_START_DATE");
             SimulationCurrentDate = (!string.IsNullOrEmpty(startDateStr) && DateTime.TryParse(startDateStr, out var parsedDate))
                 ? parsedDate
                 : DateTime.UtcNow;
 
-            // Start SSE listener (read-only) for THIS session
             StreamTask = StartSseStreamAsync(RecordsBasePath + ".json", linkedToken);
 
-            // Simulator delay (milliseconds), default 1000
             var simulatorDelayMs = int.TryParse(Environment.GetEnvironmentVariable("FIREBASE_SIM_DELAY_MS"), out var parsedDelay)
                 ? parsedDelay
                 : 1000;
 
-            // Push demo records in the background
             SimulationTask = Task.Run(async () =>
             {
                 try

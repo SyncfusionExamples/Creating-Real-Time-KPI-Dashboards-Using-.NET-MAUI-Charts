@@ -22,12 +22,7 @@ namespace KPIDashboard
 
             // Register services
             builder.Services.AddSingleton<FirebaseService>();
-            builder.Services.AddSingleton<DashboardViewModel>(sp =>
-            {
-                var db = sp.GetRequiredService<FirebaseService>();
-                var logger = sp.GetService<ILogger<DashboardViewModel>>();
-                return new DashboardViewModel(db, logger);
-            });
+            builder.Services.AddSingleton<DashboardViewModel>();
 
 #if DEBUG
             builder.Logging.AddDebug();
@@ -37,6 +32,4 @@ namespace KPIDashboard
             return app;
         }
     }
-
-
 }

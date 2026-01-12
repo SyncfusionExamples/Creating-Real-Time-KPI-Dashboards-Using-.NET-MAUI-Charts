@@ -1,6 +1,5 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using Microsoft.Extensions.Logging;
 
 namespace KPIDashboard
 {
@@ -13,30 +12,29 @@ namespace KPIDashboard
         private readonly CancellationTokenSource _cts = new();
         private const int MaxPoints = 60;
 
-        // Chart-bound collections
         public ObservableCollection<TimePoint> RevenueTrend { get; } = new();
         public ObservableCollection<CategoryPoint> LeadsByChannel { get; } = new();
         public ObservableCollection<CategoryPoint> RevenueByRegion { get; } = new();
         public ObservableCollection<CategoryPoint> SalesActual { get; } = new();
         public ObservableCollection<CategoryPoint> SalesRemaining { get; } = new();
         public ObservableCollection<InsightItem> Insights { get; } = new();
-
-        // Brushes for charts (examples)
         public List<Brush> LeadsBrushes { get; set; } = new();
         public List<Brush> CustomBrushes { get; set; }
 
-        // KPI target/actual
-        private double _target = 100000; // will be loaded from DB view
+        private double _target = 100000; 
         private double _currentActual = 0;
-
         public double Target => _target;
         public double Actual => _currentActual;
 
-        private readonly FirebaseService _db;
+        private readonly FirebaseService _firebaseService;
+        private readonly Dictionary<string, double> _unitsByChannel = new(StringComparer.OrdinalIgnoreCase);
+        private readonly List<TimePoint> _trendBuffer = new();
+        private readonly List<SalesRecord> _recordBuffer = new();
+        private readonly object _bufferLock = new();
 
-        public DashboardViewModel(FirebaseService db)
+        public DashboardViewModel(FirebaseService firebaseService)
         {
-            _db = db;
+            _firebaseService = firebaseService;
 
             CustomBrushes = new List<Brush>
             {
@@ -59,11 +57,6 @@ namespace KPIDashboard
             _ = InitializeAsync();
         }
 
-        public DashboardViewModel(FirebaseService db, ILogger<DashboardViewModel>? logger) : this(db)
-        {
-            // Logger parameter kept for backward compatibility; not used.
-        }
-
         /// <summary>
         /// Initializes realtime listening by subscribing to NewSalesRecord, seeding the database if needed,
         /// and starting the Firebase SSE stream. Emits initial records, then one per second in demo mode.
@@ -72,9 +65,9 @@ namespace KPIDashboard
         {
             try
             {
-                _db.NewSalesRecord += (_, rec) => OnNewSalesRecord(rec);
-                await _db.EnsureSeedAsync(_cts.Token);
-                await _db.StartListeningAsync(_cts.Token);
+                _firebaseService.NewSalesRecord += (_, rec) => OnNewSalesRecord(rec);
+                await _firebaseService.EnsureSeedAsync(_cts.Token);
+                await _firebaseService.StartListeningAsync(_cts.Token);
             }
             catch (Exception ex)
             {
@@ -149,13 +142,8 @@ namespace KPIDashboard
         {
             _cts.Cancel();
             _cts.Dispose();
-            await _db.DisposeAsync();
+            await _firebaseService.DisposeAsync();
         }
-
-        private readonly Dictionary<string, double> _unitsByChannel = new(StringComparer.OrdinalIgnoreCase);
-        private readonly List<TimePoint> _trendBuffer = new(); // to cap last 60
-        private readonly List<SalesRecord> _recordBuffer = new(); // rolling buffer for last 60 records
-        private readonly object _bufferLock = new();
 
         /// <summary>
         /// Handles a newly received sales record: updates rolling buffers, chart collections, and insights.
@@ -166,7 +154,6 @@ namespace KPIDashboard
             TimePoint[] trendSnapshot;
             List<CategoryPoint> regionSnapshot;
 
-            // Append to buffers under lock; take snapshots for UI thread
             lock (_bufferLock)
             {
                 if (_trendBuffer.Count >= MaxPoints)
@@ -189,7 +176,6 @@ namespace KPIDashboard
 
             MainThread.BeginInvokeOnMainThread(() =>
             {
-                // Revenue trend (append/remove instead of full clear to reduce churn)
                 if (RevenueTrend.Count == 0)
                 {
                     foreach (var p in trendSnapshot)
