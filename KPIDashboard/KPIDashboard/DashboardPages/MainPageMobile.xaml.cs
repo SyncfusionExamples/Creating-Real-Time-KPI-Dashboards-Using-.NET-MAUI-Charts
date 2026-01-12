@@ -6,8 +6,9 @@ namespace KPIDashboard.DashboardPages
         {
             InitializeComponent();
 
-            BindingContext = MauiProgram.Services!
-              .GetRequiredService<DashboardViewModel>();
+            BindingContext = (MauiProgram.Services
+                    ?? throw new InvalidOperationException("IServiceProvider is not initialized."))
+                    .GetRequiredService<DashboardViewModel>();
         }
     }
 }
