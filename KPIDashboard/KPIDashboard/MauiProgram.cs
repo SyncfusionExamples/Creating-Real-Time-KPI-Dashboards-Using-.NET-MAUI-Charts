@@ -5,9 +5,12 @@ namespace KPIDashboard
 {
     public static class MauiProgram
     {
+        public static IServiceProvider? Services { get; private set; }
+
         public static MauiApp CreateMauiApp()
         {
             var builder = MauiApp.CreateBuilder();
+
             builder
                 .UseMauiApp<App>()
                 .ConfigureSyncfusionToolkit()
@@ -17,11 +20,16 @@ namespace KPIDashboard
                     fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
                 });
 
-#if DEBUG
-    		builder.Logging.AddDebug();
-#endif
+            // Register services
+            builder.Services.AddSingleton<FirebaseService>();
+            builder.Services.AddSingleton<DashboardViewModel>();
 
-            return builder.Build();
+#if DEBUG
+            builder.Logging.AddDebug();
+#endif
+            var app = builder.Build();
+            Services = app.Services;
+            return app;
         }
     }
 }

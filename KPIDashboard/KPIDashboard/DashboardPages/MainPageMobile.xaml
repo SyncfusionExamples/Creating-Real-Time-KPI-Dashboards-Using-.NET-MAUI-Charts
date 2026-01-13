@@ -8,10 +8,6 @@
     Padding="8"
     BackgroundColor="#0B1220">
 
-    <ContentPage.BindingContext>
-        <local:DashboardViewModel />
-    </ContentPage.BindingContext>
-
     <ContentPage.Resources>
         <ResourceDictionary>
             <Color x:Key="TextLight">#E5E7EB</Color>
@@ -126,7 +122,7 @@
                     <Label Text="Revenue Trend" Style="{StaticResource CardTitle}" />
                     <Chart:SfCartesianChart HeightRequest="200">
                         <Chart:SfCartesianChart.XAxes>
-                            <Chart:DateTimeAxis IntervalType="Days" Interval="5" ShowMajorGridLines="False">
+                            <Chart:DateTimeAxis AutoScrollingMode="End" AutoScrollingDeltaType="Months" AutoScrollingDelta="1" IntervalType="Days" Interval="1" ShowMajorGridLines="False">
                                 <Chart:DateTimeAxis.LabelStyle>
                                     <Chart:ChartAxisLabelStyle TextColor="LightGray"/>
                                 </Chart:DateTimeAxis.LabelStyle>

@@ -45,4 +45,5 @@ public class SalesRecord
     public string? Region { get; set; }
     public double UnitsSold { get; set; }
     public double Revenue { get; set; }
+    public String? SourceInstanceId { get; set; }
 }

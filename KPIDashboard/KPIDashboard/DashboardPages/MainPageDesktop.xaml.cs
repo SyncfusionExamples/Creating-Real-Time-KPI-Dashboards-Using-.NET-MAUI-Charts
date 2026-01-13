@@ -5,6 +5,10 @@ namespace KPIDashboard.DashboardPages
         public MainPageDesktop()
         {
             InitializeComponent();
+
+            BindingContext = (MauiProgram.Services
+                    ?? throw new InvalidOperationException("IServiceProvider is not initialized."))
+                    .GetRequiredService<DashboardViewModel>();
         }
     }
 }
